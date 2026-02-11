@@ -22,6 +22,16 @@ app.use(
   }),
 );
 
+// 1. Add this middleware before your routes
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    res.status(500).send("Database connection failed");
+  }
+});
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -39,15 +49,13 @@ app.use("/api/chat", chatRoutes);
 //   });
 // }
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  connectDB()
-    .then(() => {
-      console.log(" 🟢 Database connection established");
-    })
-    .catch((err) => {
-      console.error(" 🔴 Database connection failed:", err);
-    });
-});
+// Vercel doesn't need app.listen for production,
+// but we keep it for local development
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
 
 export default app;
