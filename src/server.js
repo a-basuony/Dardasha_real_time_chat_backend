@@ -19,12 +19,32 @@ mongoose.set("bufferCommands", false);
 await connectDB();
 console.log("✅ MongoDB connected");
 
-app.use(
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://dardasha-real-time-chat-frontend.vercel.app",
+];
+// "https://dardasha-real-time-chat-frontend-rd73p3ysz.vercel.app",
+// https://dardasha-real-time-chat-frontend.vercel.app
+
+https: app.use(
   cors({
-    origin: "https://dardasha-real-time-chat-frontend-rd73p3ysz.vercel.app",
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   }),
 );
+
+// app.use(
+//   cors({
+//     origin: "https://dardasha-real-time-chat-frontend-rd73p3ysz.vercel.app",
+//     credentials: true,
+//   }),
+// );
 
 app.use(express.json());
 app.use(cookieParser());
