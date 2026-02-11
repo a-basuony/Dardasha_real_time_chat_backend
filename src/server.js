@@ -21,7 +21,7 @@ console.log("✅ MongoDB connected");
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: "https://dardasha-real-time-chat-frontend-rd73p3ysz.vercel.app",
     credentials: true,
   }),
 );
