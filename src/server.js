@@ -19,17 +19,16 @@ mongoose.set("bufferCommands", false);
 await connectDB();
 console.log("✅ MongoDB connected");
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://dardasha-real-time-chat-frontend.vercel.app",
-];
-// "https://dardasha-real-time-chat-frontend-rd73p3ysz.vercel.app",
-// https://dardasha-real-time-chat-frontend.vercel.app
+const allowedOrigins = ["http://localhost:5173"];
 
-https: app.use(
+app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app")
+      ) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
