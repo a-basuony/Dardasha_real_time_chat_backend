@@ -2,7 +2,6 @@ import express from "express";
 import "dotenv/config";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import path from "path";
 import mongoose from "mongoose";
 
 import authRoutes from "./routes/auth.route.js";
@@ -10,6 +9,7 @@ import userRoutes from "./routes/user.route.js";
 import chatRoutes from "./routes/chat.route.js";
 
 import { connectDB } from "./lib/db.js";
+import { createAllowedOrigins, isAllowedOrigin } from "./lib/cors-origins.js";
 
 const app = express();
 
@@ -19,16 +19,12 @@ mongoose.set("bufferCommands", false);
 await connectDB();
 console.log("✅ MongoDB connected");
 
-const allowedOrigins = ["http://localhost:5173"];
+const allowedOrigins = createAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS);
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (
-        !origin ||
-        allowedOrigins.includes(origin) ||
-        origin.endsWith(".vercel.app")
-      ) {
+      if (isAllowedOrigin(origin, allowedOrigins)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
@@ -37,13 +33,6 @@ app.use(
     credentials: true,
   }),
 );
-
-// app.use(
-//   cors({
-//     origin: "https://dardasha-real-time-chat-frontend-rd73p3ysz.vercel.app",
-//     credentials: true,
-//   }),
-// );
 
 app.use(express.json());
 app.use(cookieParser());
