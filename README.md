@@ -198,3 +198,18 @@ For support and questions, please open an issue in the repository or contact the
 ---
 
 **Happy Chatting! 🎉**
+
+## 🌐 Browser origins and CORS
+
+Credentialed browser requests are limited to these exact origins by default:
+
+- `http://localhost:5173` (local Vite frontend)
+- `https://dardasha-real-time-chat-frontend.vercel.app` (deployed frontend)
+
+The backend **does not** trust all `*.vercel.app` websites. To authorize specific custom domains or preview deployments, configure the optional `CORS_ALLOWED_ORIGINS` in the backend environment, as a comma-separated list **without a trailing slash**:
+
+```dotenv
+CORS_ALLOWED_ORIGINS=https://my-preview.vercel.app,https://chat.example.com
+```
+
+This is a browser CORS policy, not a substitute for authentication, authorization, CSRF protection, or careful cookie settings. Run `npm test` to check the origin-matching regression tests.
