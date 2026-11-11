@@ -40,8 +40,8 @@ A modern real-time chat application built with the MERN stack that enables users
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd real-time-chat/backend
+   git clone https://github.com/a-basuony/Dardasha_real_time_chat_backend.git
+   cd Dardasha_real_time_chat_backend
    ```
 
 2. **Install dependencies**
@@ -57,10 +57,14 @@ A modern real-time chat application built with the MERN stack that enables users
    Update the `.env` file with your configuration:
    ```env
    PORT=5001
-   MONGO_URI=your_mongodb_connection_string
-   JWT_SECRET_KEY=your_jwt_secret_key
+   MONGO_URI=mongodb://127.0.0.1:27017/dardasha
+   STEAM_API_KEY=your_stream_api_key
+   STEAM_API_SECRET=your_stream_api_secret
+   JWT_SECRET_KEY=your_long_random_jwt_secret
    NODE_ENV=development
    ```
+
+**Security note:** Use your own credentials in the ignored `.env` file only. A MongoDB Atlas URI with credentials was previously committed to `.env.example`; **rotate/revoke that database user's password in Atlas immediately**, assess access logs and deployed environments, and never treat deleting the file from the latest commit as a way to erase its Git history. The current code uses `STEAM_API_KEY`/`STEAM_API_SECRET` names (a legacy spelling) for Stream Chat credentials.
 
 4. **Start the development server**
    ```bash
