@@ -26,6 +26,7 @@ export function toPublicUser(user) {
   if (!user) return user;
 
   const record = typeof user.toObject === "function" ? user.toObject() : user;
-  const { password: _password, ...safeUser } = record;
+  const safeUser = { ...record };
+  delete safeUser.password;
   return safeUser;
 }
