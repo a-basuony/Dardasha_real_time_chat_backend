@@ -1,5 +1,7 @@
 import User from "../models/User.js";
 import FriendRequest from "../models/FriendRequest.js";
+import mongoose from "mongoose";
+import { isAlreadyFriends, isPendingFriendRequest } from "../lib/friend-request-utils.js";
 
 export async function getRecommendedUsers(req, res) {
   try {
@@ -38,6 +40,10 @@ export async function sendFriendRequest(req, res) {
     const myId = req.user.id;
     const { id: recipientId } = req.params;
 
+    if (!mongoose.Types.ObjectId.isValid(recipientId)) {
+      return res.status(400).json({ message: "Invalid recipient ID" });
+    }
+
     // prevent sending req to yourself
     if (myId === recipientId) {
       return res.status(400).json({ message: "You can't send friend request to yourself" });
@@ -49,7 +55,7 @@ export async function sendFriendRequest(req, res) {
     }
 
     // check if user is already friends
-    if (recipient.friends.includes(myId)) {
+    if (isAlreadyFriends(recipient.friends, myId)) {
       return res.status(400).json({ message: "You are already friends with this user" });
     }
 
@@ -83,6 +89,10 @@ export async function acceptFriendRequest(req, res) {
   try {
     const { id: requestId } = req.params;
 
+    if (!mongoose.Types.ObjectId.isValid(requestId)) {
+      return res.status(400).json({ message: "Invalid friend request ID" });
+    }
+
     const friendRequest = await FriendRequest.findById(requestId);
 
     if (!friendRequest) {
@@ -94,17 +104,27 @@ export async function acceptFriendRequest(req, res) {
       return res.status(403).json({ message: "You are not authorized to accept this request" });
     }
 
-    friendRequest.status = "accepted";
-    await friendRequest.save();
+    if (!isPendingFriendRequest(friendRequest)) {
+      return res.status(409).json({ message: "Friend request has already been handled" });
+    }
 
-    // add each user to the other's friends array
-    // $addToSet: adds elements to an array only if they do not already exist.
-    await User.findByIdAndUpdate(friendRequest.sender, {
-      $addToSet: { friends: friendRequest.recipient },
+    // Claim the pending request atomically to reject concurrent/duplicate accepts.
+    const acceptedRequest = await FriendRequest.findOneAndUpdate(
+      { _id: requestId, recipient: req.user.id, status: "pending" },
+      { $set: { status: "accepted" } },
+      { new: true },
+    );
+    if (!acceptedRequest) {
+      return res.status(409).json({ message: "Friend request has already been handled" });
+    }
+
+    // $addToSet keeps existing friendships idempotent.
+    await User.findByIdAndUpdate(acceptedRequest.sender, {
+      $addToSet: { friends: acceptedRequest.recipient },
     });
 
-    await User.findByIdAndUpdate(friendRequest.recipient, {
-      $addToSet: { friends: friendRequest.sender },
+    await User.findByIdAndUpdate(acceptedRequest.recipient, {
+      $addToSet: { friends: acceptedRequest.sender },
     });
 
     res.status(200).json({ message: "Friend request accepted" });
