@@ -1,9 +1,10 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { isInvalidAuthTokenError } from "../lib/token-errors.js";
 
 export const protectRoute = async (req, res, next) => {
   try {
-    const token = req.cookies.jwt;
+    const token = req.cookies?.jwt;
 
     if (!token) {
       return res.status(401).json({ message: "Unauthorized - No token provided" });
@@ -25,7 +26,11 @@ export const protectRoute = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.log("Error in protectRoute middleware", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    if (isInvalidAuthTokenError(error)) {
+      return res.status(401).json({ message: "Unauthorized - Invalid or expired token" });
+    }
+
+    console.error("Error in protectRoute middleware", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
