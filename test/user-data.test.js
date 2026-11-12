@@ -2,13 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { normalizeOnboardingPayload, toPublicUser } from "../src/lib/user-data.js";
 
-test("onboarding keeps only the five editable profile fields", () => {
+test("onboarding allows required profile fields and optional avatar only", () => {
   const input = {
     fullName: " Alice ",
     bio: " Hi ",
     nativeLanguage: " English ",
     learningLanguage: " Spanish ",
     location: " Cairo ",
+    profilePic: " https://avatar.iran.liara.run/public/1.png ",
     email: "attacker@example.com",
     password: "unhashed-password",
     friends: ["unexpected-user"],
@@ -23,6 +24,7 @@ test("onboarding keeps only the five editable profile fields", () => {
       nativeLanguage: "English",
       learningLanguage: "Spanish",
       location: "Cairo",
+      profilePic: "https://avatar.iran.liara.run/public/1.png",
     },
   });
 });
@@ -38,6 +40,15 @@ test("onboarding rejects empty and non-string required fields", () => {
   assert.deepEqual(actual.missingFields, ["fullName", "bio"]);
   assert.equal(actual.update, null);
   assert.equal(normalizeOnboardingPayload(null).missingFields.length, 5);
+  const untrustedAvatar = normalizeOnboardingPayload({
+    fullName: "Alice",
+    bio: "Hi",
+    nativeLanguage: "English",
+    learningLanguage: "Spanish",
+    location: "Cairo",
+    profilePic: { $set: "arbitrary" },
+  });
+  assert.equal("profilePic" in untrustedAvatar.update, false);
 });
 
 test("public serializer drops password without mutating a model document", () => {
