@@ -1,6 +1,7 @@
 import { upsertStreamUser } from "../lib/stream.js";
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
+import { normalizeOnboardingPayload, toPublicUser } from "../lib/user-data.js";
 
 export async function signup(req, res) {
   const { email, password, fullName } = req.body;
@@ -65,7 +66,7 @@ export async function signup(req, res) {
       secure: true,
     });
 
-    res.status(201).json({ success: true, user: newUser });
+    res.status(201).json({ success: true, user: toPublicUser(newUser) });
   } catch (error) {
     console.log("Error in signup controller", error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -99,7 +100,7 @@ export async function login(req, res) {
       secure: true,
     });
 
-    res.status(200).json({ success: true, user });
+    res.status(200).json({ success: true, user: toPublicUser(user) });
   } catch (error) {
     console.log("Error in login controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
@@ -119,35 +120,18 @@ export async function onboard(req, res) {
   try {
     const userId = req.user._id;
 
-    const { fullName, bio, nativeLanguage, learningLanguage, location } =
-      req.body;
-
-    if (
-      !fullName ||
-      !bio ||
-      !nativeLanguage ||
-      !learningLanguage ||
-      !location
-    ) {
+    const { missingFields, update } = normalizeOnboardingPayload(req.body);
+    if (missingFields.length) {
       return res.status(400).json({
         message: "All fields are required",
-        missingFields: [
-          !fullName && "fullName",
-          !bio && "bio",
-          !nativeLanguage && "nativeLanguage",
-          !learningLanguage && "learningLanguage",
-          !location && "location",
-        ].filter(Boolean),
+        missingFields,
       });
     }
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      {
-        ...req.body,
-        isOnboarded: true,
-      },
-      { new: true },
+      { ...update, isOnboarded: true },
+      { new: true, runValidators: true },
     );
 
     if (!updatedUser)
@@ -169,7 +153,7 @@ export async function onboard(req, res) {
       );
     }
 
-    res.status(200).json({ success: true, user: updatedUser });
+    res.status(200).json({ success: true, user: toPublicUser(updatedUser) });
   } catch (error) {
     console.error("Onboarding error:", error);
     res.status(500).json({ message: "Internal Server Error" });
